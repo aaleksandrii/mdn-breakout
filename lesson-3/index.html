@@ -16,20 +16,26 @@
     const canvas = document.getElementById("myCanvas");
     // Переменная ctx используется для хранения 2D визуализации контекста — метод, который используется для отрисовки в Canvas
     const ctx = canvas.getContext("2d");
+    // список цветов
+    const colors = ['red', 'yellow', 'purple', 'green', 'black', 'blue'];
+    let color = '#0095DD';
     const ballRadius = 10;
     // стартовая точка в нижней центральной части Canvas в переменной x и y, используется их для определения текущего положения мяча
-    let x = canvas.width/2;
-    let y = canvas.height-30;
-    console.log('width', x)
-    console.log('height', y)
+    let x = canvas.width / 2;
+    let y = canvas.height - 30;
     // позиция мяча после каждой итерации (шаг смещения)
-    let dx = 0;
-    let dy = -1;
+    let dx = 2;
+    let dy = -2;
+
+    function changeColor() {
+        const count = Math.floor(Math.random() * 6);
+        color = colors[count];
+    }
 
     function drawBall() {
         ctx.beginPath();
         ctx.arc(x, y, ballRadius, 0, Math.PI*2);
-        ctx.fillStyle = "#0095DD";
+        ctx.fillStyle = color;
         ctx.fill();
         ctx.closePath();
     }
@@ -41,6 +47,19 @@
         drawBall();
         x += dx;
         y += dy;
+
+        // отскок от бортов
+        if(x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
+            // меняет цвет при ударении на рандомный цвет
+            changeColor();
+            dx = -dx;
+        }
+        if(y + dy > canvas.height - ballRadius || y + dy < ballRadius) {
+            // меняет цвет при ударении на рандомный цвет
+            changeColor();
+            dy = -dy;
+        }
+
     }
 
     setInterval(draw, 10);
