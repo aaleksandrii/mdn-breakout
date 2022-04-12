@@ -33,6 +33,24 @@
     let rightPressed = false;
     let leftPressed = false;
 
+    // инициализиционые данный о кирпичах
+    const brickRowCount = 3;
+    const brickColumnCount = 5;
+    const brickWidth = 75;
+    const brickHeight = 20;
+    const brickPadding = 10;
+    const brickOffsetTop = 30;
+    const brickOffsetLeft = 30;
+
+    // данные о кирпичах
+    let bricks = [];
+    for( let column = 0; column < brickColumnCount; column++) {
+        bricks[column] = [];
+        for(let row = 0; row < brickRowCount; row++) {
+            bricks[column][row] = { x: 0, y: 0 };
+        }
+    }
+
 
     document.addEventListener("keydown", keyDownHandler, false);
     document.addEventListener("keyup", keyUpHandler, false);
@@ -63,6 +81,24 @@
         ctx.closePath();
     }
 
+    function drawBricks() {
+        for(let column = 0; column < brickColumnCount; column++) {
+            for(let row = 0; row < brickRowCount; row++) {
+                // положение по оси х
+                const brickX = (column * (brickWidth + brickPadding)) + brickOffsetLeft;
+                // положение по оси y
+                const brickY = (row * (brickHeight+brickPadding)) + brickOffsetTop;
+                bricks[column][row].x = brickX;
+                bricks[column][row].y = brickY;
+                ctx.beginPath();
+                ctx.rect(brickX, brickY, brickWidth, brickHeight);
+                ctx.fillStyle = "#0095DD";
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+    }
+
     function drawBall() {
         ctx.beginPath();
         ctx.arc(x, y, ballRadius, 0, Math.PI*2);
@@ -74,8 +110,11 @@
     function draw() {
         // очищаем предыдущий мяч перед отрисовкой его с следуищими координатами
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // код отрисовки кирпичей
+        drawBricks();
         // код отрисовки мяча
         drawBall();
+        // код отрисовки ракетки
         drawPaddle();
 
         if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
@@ -91,7 +130,7 @@
                 dy = -dy;
             } else {
                 // нижний борт сигнализирует проигрыш
-                alert("GAME OVER");
+                // alert("GAME OVER");
                 document.location.reload();
             }
         }
