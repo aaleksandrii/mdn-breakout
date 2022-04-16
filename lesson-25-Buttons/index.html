@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Gamedev Phaser Workshop</title>
+    <style>
+        * { padding: 0; margin: 0; }
+    </style>
+    <script src="../assets/scripts/phaser.min.js"></script>
+</head>
+<body>
+    <script>
+        const game = new Phaser.Game(480, 320, Phaser.CANVAS, null, {
+            preload: preload, create: create, update: update
+        });
+
+        // announce objects in the game
+        let ball;
+
+        let paddle;
+
+        let bricks;
+        let newBrick;
+        let brickInfo;
+
+        let scoreText;
+        let score = 0;
+
+        let lives = 3;
+        let livesText;
+        let lifeLostText;
+
+        let startButton;
+        let playing = false;
+
+        let textStyle = { font: '18px Arial', fill: '#0095DD' };
+
+        function preload() {
+            // setup orientation & scale for display
+            game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+            game.scale.pageAlignHorizontally = true;
+            game.scale.pageAlignVertically = true;
+            // setup background color canvas'
+            game.stage.backgroundColor = '#eee';
+            // setup ball sprite
+            game.load.image('ball', '../assets/images/ball.png');
+            // setup paddle sprite
+            game.load.image('paddle', '../assets/images/paddle.png');
+            // setup brick sprite
+            game.load.image('brick', '../assets/images/brick.png');
+            // show the sprites sequentially to create the illusion of animation
+            game.load.spritesheet('ball', '../assets/images/wobble.png', 20, 20);
+            // setup button sprite
+            game.load.spritesheet('button', '../assets/images/button.png', 120, 40);
+        }
+        function create() {
+            // initialize physic system
+            game.physics.startSystem(Phaser.Physics.ARCADE);
+            // add ball on display
+            ball = game.add.sprite(50, 250, 'ball');
+            // add animation for ball
+            ball.animations.add('wobble', [0,1,0,2,0,1,0,2,0], 24);
+            // add ball to physic system
+            game.physics.enable(ball, Phaser.Physics.ARCADE);
+            // setup "hard" border in phaser framework
+            ball.body.collideWorldBounds = true;
+            // setup the most easy bounce against canvas border in phaser framework
+            ball.body.bounce.set(1);
+            // setup velocity to ball
+            ball.body.velocity.set(150, 150);
+            // initialize paddle in the game
+            paddle = game.add.sprite(game.world.width * 0.5, game.world.height - 5, 'paddle');
+            paddle.anchor.set(0.5, 1);
+            // add paddle to physic system
+            game.physics.enable(paddle, Phaser.Physics.ARCADE);
+            // fasten in place paddle after collision with the ball (after have added collide between ball and paddle)
+            paddle.body.immovable = true;
+            // disable checking for bottom part canvas for collision
+            game.physics.arcade.checkCollision.down = false;
+            // enable checking for borders on collision
+            ball.checkWorldBounds = true;
+            // set to onOutOfBounds ballLeaveScreen function
+            ball.events.onOutOfBounds.add(ballLeaveScreen, this);
+            // create bricks
+            initBricks();
+            // Add to screen description 'score'
+            scoreText = game.add.text(5, 5, 'Points: 0', textStyle);
+            // Add to screen description 'lives'
+            livesText = game.add.text(game.world.width - 5, 5, 'Lives: '+ lives, textStyle);
+            livesText.anchor.set(1,0);
+            // Add to screen description 'life lost ...'
+            lifeLostText = game.add.text(game.world.width * 0.5, game.world.height * 0.5, 'Life lost, click to continue', textStyle);
+            lifeLostText.anchor.set(0.5);
+            // Hidden lifeLost text
+            lifeLostText.visible = false;
+            // Add to screen button
+            startButton = game.add.button(game.world.width * 0.5, game.world.height * 0.5, 'button', startGame, this, 1, 0, 2);
+            startButton.anchor.set(0.5);
+        }
+        // The code inside this function is executed on every frame
+        function update() {
+            // add collision between ball and paddle, when the hit happens handle ballHitPaddle
+            game.physics.arcade.collide(ball, paddle, ballHitPaddle);
+            // add collision between ball and bricks, when the hit happens handle ballHitBrick
+            game.physics.arcade.collide(ball, bricks, ballHitBrick);
+            // track location brick along axis x
+            if (playing) {
+                paddle.x = game.input.x || game.world.width * 0.5;
+            }
+        }
+
+        // custom function for bricks draw
+        function initBricks() {
+            brickInfo = {
+                width: 50,
+                height: 20,
+                count: {
+                    row: 3,
+                    col: 7
+                },
+                offset: {
+                    top: 50,
+                    left: 60
+                },
+                padding: 10
+            };
+            // initialize empty set bricks
+            bricks = game.add.group();
+
+            for(let column = 0; column < brickInfo.count.col; column++) {
+                for(let row = 0; row < brickInfo.count.row; row++) {
+                    let brickX = (column * (brickInfo.width + brickInfo.padding)) + brickInfo.offset.left;
+                    let brickY = (row * (brickInfo.height + brickInfo.padding)) + brickInfo.offset.top;
+                    // create each individual brick
+                    newBrick = game.add.sprite(brickX, brickY, 'brick');
+                    // for each individual brick set physic
+                    game.physics.enable(newBrick, Phaser.Physics.ARCADE);
+                    // fasten in place each individual brick after collision with the ball (after have added collide between ball and each individual brick)
+                    newBrick.body.immovable = true;
+                    newBrick.anchor.set(0.5);
+                    // add to bricks group
+                    bricks.add(newBrick);
+                }
+            }
+        }
+
+        // custom function which handle collision between ball and brick
+        function ballHitBrick(ball, brick) {
+            // add animation for disappearing brick
+            let killTween = game.add.tween(brick.scale);
+            killTween.to({ x: 0, y: 0 }, 200, Phaser.Easing.Linear.None);
+            killTween.onComplete.addOnce(function() {
+                // remove brick from screen
+                brick.kill();
+            }, this);
+            killTween.start();
+            // Add score
+            score += 10;
+            // Update score description
+            scoreText.setText('Points: ' + score);
+
+            let countAlive = 0;
+            for (let i = 0; i < bricks.children.length; i++) {
+                if (bricks.children[i].alive === true) {
+                    countAlive++;
+                }
+            }
+            if (countAlive === 0) {
+                alert('You won the game, congratulations!');
+                location.reload();
+            }
+        }
+
+        // custom function for handle when ball leave screen
+        function ballLeaveScreen() {
+            // decrement lives
+            lives--;
+            // if we have lives, game be continue with reset position paddle and ball
+            if (lives) {
+                livesText.setText('Lives: ' + lives);
+                lifeLostText.visible = true;
+                ball.reset(game.world.width * 0.5, game.world.height - 25);
+                paddle.reset(game.world.width * 0.5, game.world.height - 5);
+                game.input.onDown.addOnce(function() {
+                    lifeLostText.visible = false;
+                    ball.body.velocity.set(150, -150);
+                }, this);
+            } else {
+                alert('You lost, game over!');
+                location.reload();
+            }
+        }
+
+        // custom function for handle when ball hit paddle
+        function ballHitPaddle(ball, paddle) {
+            ball.animations.play('wobble');
+        }
+
+        // custom function for handle click button
+        function startGame() {
+            startButton.destroy();
+            ball.body.velocity.set(150, -150);
+            playing = true;
+        }
+    </script>
+</body>
+</html>
