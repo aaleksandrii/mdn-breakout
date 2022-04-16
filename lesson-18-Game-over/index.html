@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Gamedev Phaser Workshop</title>
+    <style>
+        * { padding: 0; margin: 0; }
+    </style>
+    <script src="../assets/scripts/phaser.min.js"></script>
+</head>
+<body>
+    <script>
+        const game = new Phaser.Game(480, 320, Phaser.CANVAS, null, {
+            preload: preload, create: create, update: update
+        });
+
+        // announce objects in the game
+        let ball;
+        let paddle;
+
+        function preload() {
+            // setup orientation & scale for display
+            game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+            game.scale.pageAlignHorizontally = true;
+            game.scale.pageAlignVertically = true;
+            // setup background color canvas'
+            game.stage.backgroundColor = '#eee';
+            // setup ball sprite
+            game.load.image('ball', '../assets/images/ball.png');
+            // setup paddle sprite
+            game.load.image('paddle', '../assets/images/paddle.png');
+        }
+        function create() {
+            // initialize physic system
+            game.physics.startSystem(Phaser.Physics.ARCADE);
+            // add ball on display
+            ball = game.add.sprite(50, 50, 'ball');
+            // add ball to physic system
+            game.physics.enable(ball, Phaser.Physics.ARCADE);
+            // setup "hard" border in phaser framework
+            ball.body.collideWorldBounds = true;
+            // setup the most easy bounce against canvas border in phaser framework
+            ball.body.bounce.set(1);
+            // setup velocity to ball
+            ball.body.velocity.set(150, 150);
+            // initialize paddle in the game
+            paddle = game.add.sprite(game.world.width * 0.5, game.world.height - 5, 'paddle');
+            paddle.anchor.set(0.5, 1);
+            // add paddle to physic system
+            game.physics.enable(paddle, Phaser.Physics.ARCADE);
+            // fasten in place paddle after collision with the ball (after have added collide between ball and paddle)
+            paddle.body.immovable = true;
+            // disable checking for bottom part canvas for collision
+            game.physics.arcade.checkCollision.down = false;
+            // enable checking for borders on collision
+            ball.checkWorldBounds = true;
+            // set to onOutOfBounds some function
+            ball.events.onOutOfBounds.add(function(){
+                alert('Game over!');
+                location.reload();
+            }, this);
+
+        }
+        // The code inside this function is executed on every frame
+        function update() {
+            // add collision between ball and paddle
+            game.physics.arcade.collide(ball, paddle);
+        }
+    </script>
+</body>
+</html>
